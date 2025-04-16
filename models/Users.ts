@@ -36,7 +36,7 @@ next();
 // Model : This model is used when we want to create fresh model 
 // As it is nextjs it cached so checked if there is already present
 const  Users = models?.Users ||  model<IUser>("Users", userSchema);
-export default {Users};
+export default Users;
 
 
 
