@@ -1,10 +1,12 @@
 import mongoose, { Schema, model, models } from "mongoose";
+import Users from "./Users";
 export const VIDEO_DIMENTIONS = {
   width: 1080,
   height: 1920,
 } as const;
 export interface IVideo {
   _id?: mongoose.Types.ObjectId;
+  owner:mongoose.Types.ObjectId;
   title: string;
   description: string;
   videoUrl: string;
@@ -21,6 +23,7 @@ export interface IVideo {
 
 const videoSchema = new Schema<IVideo>(
   {
+    owner:{type:Schema.Types.ObjectId, ref:Users},
     title: {
       type: String,
       required: true,
