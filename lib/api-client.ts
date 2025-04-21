@@ -28,13 +28,36 @@ class ApiClient {
     return res.json();
   }
 
-  async getVideos() {
-    return this.fetch<IVideo[]>("/videos");
+  // async getVideos() {
+  //   return this.fetch<IVideo[]>("/videos");
+  // }
+
+  async getVideos(page = 1, limit = 12): Promise<IVideo[]> {
+    return this.fetch<IVideo[]>(`/videos?page=${page}&limit=${limit}`);
   }
 
-  async getAVideo(id: string) {
-    return this.fetch<IVideo>(`/videos/${id}`);
+  // async getAVideo(id: string) {
+  //   return this.fetch<IVideo>(`/videos/${id}`);
+  // }
+  async getAVideo(id: string): Promise<IVideo> {
+    return this.fetch<IVideo>(`/videos?id=${id}`);
   }
+
+  async  getUserVideos(userId: string): Promise<IVideo[]> {
+    try {
+      return this.fetch(`/videos?userId=${userId}`);
+   
+    } catch (error) {
+      throw new Error('Failed to fetch user videos');
+    }
+  }
+  async deleteVideo(id: string): Promise<void> {
+    return this.fetch<void>(`/videos?id=${id}`, { 
+      method: "DELETE", 
+      
+    });
+  }
+
   async createVideo(VideoData: videoFromData) {
     return this.fetch("/videos", {
       method: "POST",

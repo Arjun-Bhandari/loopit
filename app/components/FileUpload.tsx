@@ -7,16 +7,151 @@ import {
   ImageKitUploadNetworkError,
   upload,
 } from "@imagekit/next";
-import { useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useRef, useState, memo, useEffect } from "react";
+import { ImagePlus, Type, FileVideo, X, Upload, Loader } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
+import { useRouter } from "next/navigation";
+// Separate the preview component to prevent unnecessary re-renders
+const FilePreview = memo(
+  ({
+    preview,
+    fileType,
+    onClear,
+  }: {
+    preview: string | null;
+    fileType?: string;
+    onClear: () => void;
+  }) => {
+    if (!preview) return null;
+
+    return (
+      <div className="relative w-full h-[400px]">
+        {fileType?.startsWith("video/") ? (
+          <video
+            src={preview}
+            className="w-full h-full object-contain"
+            controls
+          />
+        ) : (
+          <img
+            src={preview}
+            alt="Preview"
+            className="w-full h-full object-contain"
+          />
+        )}
+        <button
+          onClick={onClear}
+          className="absolute top-2 right-2 p-1 bg-base-300 rounded-full hover:bg-base-100"
+        >
+          <X size={20} />
+        </button>
+      </div>
+    );
+  }
+);
+
+FilePreview.displayName = "FilePreview";
+
+// Separate the form component to prevent unnecessary re-renders
+const UploadForm = memo(
+  ({
+    title,
+    description,
+    onTitleChange,
+    onDescriptionChange,
+    onSubmit,
+    isUploading,
+    progress,
+    error,
+    disabled,
+  }: {
+    title: string;
+    description: string;
+    onTitleChange: (value: string) => void;
+    onDescriptionChange: (value: string) => void;
+    onSubmit: () => void;
+    isUploading: boolean;
+    progress: number;
+    error: string;
+    disabled: boolean;
+  }) => (
+    <div className="w-full md:w-[350px] p-6 space-y-6">
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <Type size={20} />
+          Title
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          className="input input-bordered w-full"
+          placeholder="Write a title..."
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <ImagePlus size={20} />
+          Description
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => onDescriptionChange(e.target.value)}
+          className="textarea textarea-bordered w-full h-32"
+          placeholder="Write a description..."
+        />
+      </div>
+
+      {progress > 0 && progress < 100 && (
+        <div className="w-full bg-base-300 rounded-full h-2.5">
+          <div
+            className="bg-primary h-2.5 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
+      {error && (
+        <div className="text-error text-sm p-2 bg-error/20 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <button
+        onClick={onSubmit}
+        disabled={disabled}
+        className="btn btn-primary w-full"
+      >
+        {isUploading ? (
+          <Loader className="animate-spin" size={20} />
+        ) : (
+          <>
+            <Upload size={20} />
+            Share
+          </>
+        )}
+      </button>
+    </div>
+  )
+);
+
+UploadForm.displayName = "UploadForm";
+
 // UploadExample component demonstrates file uploading using ImageKit's Next.js SDK.
 const UploadExample = () => {
   // State to keep track of the current upload progress (percentage)
   const [progress, setProgress] = useState(0);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const router = useRouter();
   const [error, setError] = useState("");
   // Create a ref for the file input element to access its files easily
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  console.log(fileInputRef);
   // Create an AbortController instance to provide an option to cancel the upload if needed.
   const abortController = new AbortController();
 
@@ -33,7 +168,7 @@ const UploadExample = () => {
     try {
       // Perform the request to the upload authentication endpoint.
       const response = await fetch("/api/imagekit-auth");
-      console.log("Response :",response)
+      console.log("Response :", response);
       if (!response.ok) {
         // If the server response is not successful, extract the error text for debugging.
         const errorText = await response.text();
@@ -44,7 +179,7 @@ const UploadExample = () => {
 
       // Parse and destructure the response JSON for upload credentials.
       const data = await response.json();
-      console.log("DATA:",data)
+      console.log("DATA:", data);
       const { signature, expire, token, publicKey } = data;
       return { signature, expire, token, publicKey };
     } catch (error) {
@@ -54,25 +189,25 @@ const UploadExample = () => {
     }
   };
   const validateFile = (file: File) => {
-    if (file.type === "video") {
+    if (file.type === "video/mp4") {
       if (!file.type.startsWith("video/")) {
         setError("Please upload a video File");
         return false;
       }
     }
-    if(file.size > 100*1024*1024){
-        setError("Vidoe must be 100 Mb")
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Vidoe must be 100 Mb");
+      return false;
+    } else {
+      const validType = ["image/jpeg", "image/png", "image/webp", "video/mp4"];
+      if (!validType.includes(file.type)) {
+        setError("Please upload a valid image file (JPEG, PNG, WEBP,mp4)");
         return false;
-    }else{
-        const validType = ["image/jpeg","image/png","image/webp"]
-        if(!validType.includes(file.type)){
-            setError("Please upload a valid image file (JPEG, PNG, WEBP)");
-            return false;
-        }
-        if(file.size > 5*1024*1024){
-            setError("Image must be 5 Mb")
-            return false;
-        }
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image must be 5 Mb");
+        return false;
+      }
     }
     return false;
   };
@@ -86,19 +221,37 @@ const UploadExample = () => {
    * - Updates the upload progress.
    * - Catches and processes errors accordingly.
    */
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+    }
+  };
+  let thumbnailUrl =
+    "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp";
+  const handleUPloadPost = async (vidUrl: string | undefined) => {
+    const videoData = {
+      title,
+      description,
+      videoUrl: vidUrl,
+      thumbnailUrl,
+    };
+    try {
+      await apiClient.createVideo(videoData);
+    } catch (error) {}
+  };
   const handleUpload = async () => {
-    // Access the file input element using the ref
-    const fileInput = fileInputRef.current;
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      alert("Please select a file to upload");
+    if (!selectedFile) {
+      setError("Please select a file to upload");
       return;
     }
 
-    // Extract the first file from the file input
-    const file = fileInput.files[0];
-   await validateFile(file)
-   const fileName = file.type ==="video"?"Video":"Image"
-   const folder = file.type==="video"?"/loopit_video":"/loopit_image";
+    // Use selectedFile directly instead of accessing through ref
+    const file = selectedFile;
+    await validateFile(file);
+
     // Retrieve authentication parameters for the upload.
     let authParams;
     try {
@@ -118,9 +271,9 @@ const UploadExample = () => {
         signature,
         publicKey,
         file,
-        folder:folder,
-        fileName: fileName, // Optionally set a custom file name
-        useUniqueFileName:true,
+        folder: file.type === "video/mp4" ? "/loopit_video" : "/loopit_image",
+        fileName: file.type === "video/mp4" ? "Video" : "Image", // Optionally set a custom file name
+        useUniqueFileName: true,
         // Progress callback to update upload progress state
         onProgress: (event) => {
           setProgress((event.loaded / event.total) * 100);
@@ -129,6 +282,10 @@ const UploadExample = () => {
         abortSignal: abortController.signal,
       });
       console.log("Upload response:", uploadResponse);
+      console.log(uploadResponse.url);
+      const mongoRes = await handleUPloadPost(uploadResponse?.url);
+      console.log(mongoRes);
+      router.push("/");
     } catch (error) {
       // Handle specific error types provided by the ImageKit SDK.
       if (error instanceof ImageKitAbortError) {
@@ -146,22 +303,121 @@ const UploadExample = () => {
     }
   };
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragIn = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOut = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files?.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith("video/") || file.type.startsWith("image/")) {
+        setSelectedFile(file);
+        const url = URL.createObjectURL(file);
+        setPreview(url);
+      } else {
+        setError("Please upload only images or videos");
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
   return (
-    <div className="space-y-2">
-      {/* File input element using React ref */}
-      <input type="file" ref={fileInputRef} />
-      {/* Button to trigger the upload process */}
-      <button type="button" onClick={handleUpload}>
-        Upload file
-      </button>
-      <br />
-      {/* Display the current upload progress */}
-      Upload progress: <progress value={progress} max={100}></progress>
-      {error && (
-        <div className="text-red-500 text-2xl">{error}</div>
-      )}
+    <div className="  bg-black/70 flex items-center justify-center p-4 z-50">
+      <div className="bg-base-200 rounded-lg  w-full shadow-xl">
+        <div className="border-b border-base-300 p-4 flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Create new post</h2>
+        </div>
+
+        <div className="flex flex-col md:flex-row min-h-[500px]">
+          <div className="flex-1 border-r border-base-300">
+            <div
+              className={`h-full flex items-center justify-center
+                ${!preview ? "border-2 border-dashed rounded-lg" : ""}
+                ${
+                  isDragging
+                    ? "border-primary bg-primary/10"
+                    : "border-base-300"
+                }
+                transition-colors duration-200`}
+              onDragEnter={handleDragIn}
+              onDragLeave={handleDragOut}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              {preview ? (
+                <FilePreview
+                  preview={preview}
+                  fileType={selectedFile?.type}
+                  onClear={() => {
+                    setSelectedFile(null);
+                    setPreview(null);
+                  }}
+                />
+              ) : (
+                <div className="text-center space-y-4 ">
+                  <div className="p-4 rounded-full bg-base-300 inline-block">
+                    <FileVideo size={48} className="text-primary" />
+                  </div>
+                  <h3 className="text-lg font-medium">
+                    {isDragging
+                      ? "Drop to upload"
+                      : "Drag photos and videos here"}
+                  </h3>
+                  <label className="btn btn-primary">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept="image/*,video/*"
+                    />
+                    Select from computer
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <UploadForm
+            title={title}
+            description={description}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onSubmit={handleUpload}
+            isUploading={progress > 0}
+            progress={progress}
+            error={error}
+            disabled={!preview || progress > 0}
+          />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default UploadExample;
+export default memo(UploadExample);

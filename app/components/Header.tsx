@@ -12,15 +12,20 @@ export function Header() {
     }
   };
   return (
-    <div>
-      <button onClick={handleSignout}>SignOut</button>
+    <div className="bg-gray-400/20 py-2 rounded-xl">
+
       {session ? (
-        <div>Welcom</div>
+        <div className="flex items-center justify-between">
+        
+         <div className="text-white text-2xl p-2">Welcome</div>
+         <button className="text-black rounded-xl bg-cyan-400 border-2 px-4 py-2" onClick={handleSignout}>SignOut</button>
+        </div>
+             
       ) : (
-        <div>
-          {" "}
-          <Link href="/login">Login</Link>
-          <Link href="/register">Signin</Link>
+        <div className=" flex justify-end">
+          
+          <Link className="text-black rounded-xl bg-cyan-400 border-2 px-4 py-2" href="/login">Login</Link>
+          <Link className="text-black rounded-xl bg-cyan-400 border-2 px-4 py-2" href="/register">Signin</Link>
         </div>
       )}
     </div>

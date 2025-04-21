@@ -18,7 +18,7 @@ export default withAuth(
           return true;
         }
         // Public
-        if(pathname === "/" || pathname.startsWith("/api/videos") || pathname === "/api/imagekit-auth"){
+        if(pathname === "/" || pathname.startsWith("/api/videos") || pathname === "/api/imagekit-auth" || pathname==="/create"){
             return true;
         }
         return !!token
