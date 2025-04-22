@@ -11,132 +11,9 @@ import { useRef, useState, memo, useEffect } from "react";
 import { ImagePlus, Type, FileVideo, X, Upload, Loader } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
-// Separate the preview component to prevent unnecessary re-renders
-const FilePreview = memo(
-  ({
-    preview,
-    fileType,
-    onClear,
-  }: {
-    preview: string | null;
-    fileType?: string;
-    onClear: () => void;
-  }) => {
-    if (!preview) return null;
+import UploadForm from "./UploadForm"
+import FilePreview from "./FilePreview";
 
-    return (
-      <div className="relative w-full h-[400px]">
-        {fileType?.startsWith("video/") ? (
-          <video
-            src={preview}
-            className="w-full h-full object-contain"
-            controls
-          />
-        ) : (
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full h-full object-contain"
-          />
-        )}
-        <button
-          onClick={onClear}
-          className="absolute top-2 right-2 p-1 bg-base-300 rounded-full hover:bg-base-100"
-        >
-          <X size={20} />
-        </button>
-      </div>
-    );
-  }
-);
-
-FilePreview.displayName = "FilePreview";
-
-// Separate the form component to prevent unnecessary re-renders
-const UploadForm = memo(
-  ({
-    title,
-    description,
-    onTitleChange,
-    onDescriptionChange,
-    onSubmit,
-    isUploading,
-    progress,
-    error,
-    disabled,
-  }: {
-    title: string;
-    description: string;
-    onTitleChange: (value: string) => void;
-    onDescriptionChange: (value: string) => void;
-    onSubmit: () => void;
-    isUploading: boolean;
-    progress: number;
-    error: string;
-    disabled: boolean;
-  }) => (
-    <div className="w-full md:w-[350px] p-6 space-y-6">
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <Type size={20} />
-          Title
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          className="input input-bordered w-full"
-          placeholder="Write a title..."
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <ImagePlus size={20} />
-          Description
-        </label>
-        <textarea
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          className="textarea textarea-bordered w-full h-32"
-          placeholder="Write a description..."
-        />
-      </div>
-
-      {progress > 0 && progress < 100 && (
-        <div className="w-full bg-base-300 rounded-full h-2.5">
-          <div
-            className="bg-primary h-2.5 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      )}
-
-      {error && (
-        <div className="text-error text-sm p-2 bg-error/20 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      <button
-        onClick={onSubmit}
-        disabled={disabled}
-        className="btn btn-primary w-full"
-      >
-        {isUploading ? (
-          <Loader className="animate-spin" size={20} />
-        ) : (
-          <>
-            <Upload size={20} />
-            Share
-          </>
-        )}
-      </button>
-    </div>
-  )
-);
-
-UploadForm.displayName = "UploadForm";
 
 // UploadExample component demonstrates file uploading using ImageKit's Next.js SDK.
 const UploadExample = () => {
@@ -151,7 +28,7 @@ const UploadExample = () => {
   const [error, setError] = useState("");
   // Create a ref for the file input element to access its files easily
   const fileInputRef = useRef<HTMLInputElement>(null);
-  console.log(fileInputRef);
+
   // Create an AbortController instance to provide an option to cancel the upload if needed.
   const abortController = new AbortController();
 
@@ -232,6 +109,9 @@ const UploadExample = () => {
   let thumbnailUrl =
     "https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp";
   const handleUPloadPost = async (vidUrl: string | undefined) => {
+    if(!vidUrl){
+      throw new Error("Video URL is required")
+    }
     const videoData = {
       title,
       description,
@@ -240,7 +120,9 @@ const UploadExample = () => {
     };
     try {
       await apiClient.createVideo(videoData);
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error during file upload:", error);
+    }
   };
   const handleUpload = async () => {
     if (!selectedFile) {

@@ -1,5 +1,5 @@
 'use client'
-
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Video } from '@imagekit/next';
 import { apiClient } from '@/lib/api-client';
@@ -10,9 +10,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 interface PageParams {
-  params: {
-    id: string;
-  };
+  params: { id: string } | Promise<{ id: string }>;
 }
 
 // Separate the video content into its own component
@@ -76,8 +74,8 @@ function VideoContent({ id }: { id: string }) {
 
 // Main page component that handles params
 export default function VideoDetailPage({ params }: PageParams) {
-  const id = params.id;
-
+  const unwrappedParams = params instanceof Promise ? React.use(params) : params;
+  const id = unwrappedParams.id;
   return (
     <Suspense 
       fallback={

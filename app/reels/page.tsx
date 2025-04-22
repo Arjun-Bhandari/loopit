@@ -54,7 +54,7 @@ export default function Home() {
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {data?.pages.map((group, i) => (
-<>
+<div key={i}>
             {group.map((video) => (
               <div 
                 key={video._id?.toString()} // Safe ObjectId handling
@@ -75,7 +75,7 @@ export default function Home() {
                 </div>
               </div>
             ))}
-       </>
+       </div>
         ))}
       </div>
 
