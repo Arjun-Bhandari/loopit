@@ -8,6 +8,7 @@ import React, { useState } from "react";
 export default function register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] =useState(false)
@@ -24,7 +25,7 @@ export default function register() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username,email, password }),
       });
 const data = res.json()
 if(res.ok){
@@ -45,7 +46,9 @@ setLoading(false)
     <div className="card-body">
       <form onSubmit={handleSubmit}>
 {error && <p>{error}</p>}
-  
+<label htmlFor="username">Name</label>
+      <input name="username" type="text" value={username} onChange={(e)=>setUsername(e.target.value)} placeholder="Name" className="input" />
+   
       <label htmlFor="email">Email</label>
       <input name="email" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" className="input" />
       <label htmlFor="passowrd">Password</label>

@@ -93,7 +93,7 @@ export async function GET(request: Request) {
     if (userId) {
       const videos = await Video.find({ owner: userId })
         .sort({ createdAt: -1 })
-        .populate('owner', 'email');
+        .populate('owner', 'username');
       return NextResponse.json(videos);
     }
 
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('owner', 'email');
+      .populate('owner', 'username');
 
     return NextResponse.json(videos);
   } catch (error) {

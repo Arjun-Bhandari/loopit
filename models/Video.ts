@@ -17,6 +17,15 @@ export interface IVideo {
     width: number;
     quality?: number;
   };
+  likes?: mongoose.Types.ObjectId[];
+  comments?:{
+    _id:string|mongoose.Types.ObjectId;
+    text:string;
+    user:{
+      _id:string |mongoose.Types.ObjectId;
+      username:string;
+    }
+  }[];
   updatedAt?: Date;
   createdAt?: Date;
 }
@@ -38,7 +47,7 @@ const videoSchema = new Schema<IVideo>(
     },
     thumbnailUrl: {
       type: String,
-      requred: true,
+      required: true,
     },
     controls: {
       type: Boolean,
@@ -49,6 +58,26 @@ const videoSchema = new Schema<IVideo>(
       width: { type: Number, default: VIDEO_DIMENTIONS.width },
       quality: { type: Number, min: 1, max: 100 },
     },
+    likes: [{
+      type: Schema.Types.ObjectId,
+      ref: Users,
+      default: [],
+    }],
+    comments: [{
+      text: {
+        type: String,
+        required: true,
+      },
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: Users,
+        required: true,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
   },
   { timestamps: true }
 );

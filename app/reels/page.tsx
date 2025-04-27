@@ -7,8 +7,9 @@ import { Video } from '@imagekit/next';
 import { apiClient } from "@/lib/api-client";
 import { IVideo } from "@/models/Video";
 import { ObjectId } from 'mongoose';
-
-export default function Home() {
+import { Play } from 'lucide-react';
+import React from 'react';
+export default function ReelsExplorePage() {
   const router = useRouter();
   const { ref, inView } = useInView();
 
@@ -41,7 +42,7 @@ export default function Home() {
 
   // Handle ObjectId type safely
   const handleVideoClick = (videoId: ObjectId | string) => {
-    router.push(`/video/${videoId.toString()}`);
+    router.push(`/reels/${videoId.toString()}`);
   };
 
   // Fix status type checking
@@ -49,44 +50,45 @@ export default function Home() {
   if (status === 'error' && error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">Reels</h1>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {data?.pages.map((group, i) => (
-<div key={i}>
-            {group.map((video) => (
-              <div 
-                key={video._id?.toString()} // Safe ObjectId handling
-                className="relative aspect-[9/16] rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer"
-                onClick={() => video._id && handleVideoClick(video._id?.toString())}
-              >
-                <Video
-                  urlEndpoint={process.env.NEXT_PUBLIC_URL_ENDPOINT}
-                  src={video.videoUrl}
-                  controls={false}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60">
-                  <div className="absolute bottom-0 p-4">
-                    <h3 className="text-white font-medium truncate">{video.title}</h3>
-                    <p className="text-gray-200 text-sm truncate">{video.description}</p>
+    <div className="bg-black min-h-screen">
+      <div className="container mx-auto px-[1px] py-[1px]">
+        <div className="grid grid-cols-3 gap-[1px]">
+          {data?.pages.map((group, i) => (
+           <React.Fragment key={i}>
+              {group.map((video) => (
+                <div 
+                  key={video._id?.toString()}
+                  className="relative aspect-[9/16] group cursor-pointer bg-gray-900"
+                  onClick={() => video._id && handleVideoClick(video._id?.toString())}
+                >
+                  <Video
+                    urlEndpoint={process.env.NEXT_PUBLIC_URL_ENDPOINT}
+                    src={video.videoUrl}
+                    controls={false}
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-white">
+                      <Play className="w-6 h-6 fill-current" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-       </div>
-        ))}
-      </div>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
 
-      {/* Infinite scroll trigger */}
-      <div
-        ref={ref}
-        className="flex justify-center p-4"
-      >
-        {isFetchingNextPage && (
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"/>
-        )}
+        {/* Infinite scroll trigger */}
+        <div
+          ref={ref}
+          className="flex justify-center p-4"
+        >
+          {isFetchingNextPage && (
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"/>
+          )}
+        </div>
       </div>
     </div>
   );

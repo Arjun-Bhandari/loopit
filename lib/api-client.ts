@@ -64,6 +64,28 @@ class ApiClient {
       body: VideoData,
     });
   }
+async toggleLike(videoId:string){
+  return this.fetch(`/videos/${videoId}/like`,{
+    method:"POST"
+  })
+}
+  async createComment(videoId:string,text:string){
+    return this.fetch(`/videos/${videoId}/comment`,{
+      method:"POST",
+      body:text,
+    })
+  }
+async getComment(videoId:string,page=1){
+  return this.fetch(`/videos/${videoId}/comment?page${page}`,{
+    method:"GET"
+  })
+
+}
+  async deleteComment(videoId:string){
+    return this.fetch(`/videos/${videoId}/comment`,{
+      method:"DELETE",
+    })
+  }
 }
 
 export const apiClient = new ApiClient();

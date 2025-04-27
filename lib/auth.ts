@@ -10,7 +10,8 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
+        username:{label:"Username",type:"text"},
+        email: { label: "Email",type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
@@ -32,6 +33,7 @@ export const authOptions: NextAuthOptions = {
           }
           return {
             id: user._id.toString(),
+            username:user.username,
             email: user.email,
           };
         } catch (error) {
