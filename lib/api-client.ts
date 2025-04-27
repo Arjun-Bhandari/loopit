@@ -1,5 +1,15 @@
 import { IVideo } from "@/models/Video";
 export type videoFromData = Omit<IVideo, "_id">;
+
+interface CommentResponse {
+  _id: string;
+  text: string;
+  user: {
+    _id: string;
+    username: string;
+  };
+  createdAt: string;
+}
 type FetchOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: any;
@@ -69,17 +79,14 @@ async toggleLike(videoId:string){
     method:"POST"
   })
 }
-  async createComment(videoId:string,text:string){
-    return this.fetch(`/videos/${videoId}/comment`,{
-      method:"POST",
-      body:text,
-    })
-  }
-async getComment(videoId:string,page=1){
-  return this.fetch(`/videos/${videoId}/comment?page${page}`,{
-    method:"GET"
-  })
-
+async createComment(videoId: string, text: string): Promise<CommentResponse> {
+  return this.fetch<CommentResponse>(`/videos/${videoId}/comment`, {
+    method: "POST",
+    body: {text} ,
+  });
+}
+async getComments(videoId: string, page = 1): Promise<{ comments: CommentResponse[]; hasMore: boolean }> {
+  return this.fetch(`/videos/${videoId}/comment?page=${page}`);
 }
   async deleteComment(videoId:string){
     return this.fetch(`/videos/${videoId}/comment`,{

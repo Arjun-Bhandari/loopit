@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Video } from '@imagekit/next';
 import { apiClient } from '@/lib/api-client';
 import { Heart, MessageCircle, Share2, Info, Play } from 'lucide-react';
@@ -15,6 +15,32 @@ export default function ReelsViewer() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [showDescription, setShowDescription] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string>(params.id as string);
+  const [commentText, setCommentText] = useState('');
+  const queryClient = useQueryClient();
+
+  // Add comment mutation
+  const { mutate: addComment } = useMutation({
+    mutationFn: async (text: string) => {
+      return apiClient.createComment(activeVideoId, text);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', activeVideoId] });
+      setCommentText('');
+    }
+  });
+
+  // Fetch comments query
+  const { data: commentsData } = useQuery({
+    queryKey: ['comments', activeVideoId],
+    queryFn: () => apiClient.getComments(activeVideoId),
+  });
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (commentText.trim()) {
+      addComment(commentText);
+    }
+  };
 
   // Fetch current video and related videos
   const { data: videos } = useInfiniteQuery<IVideo[]>({
@@ -97,11 +123,6 @@ export default function ReelsViewer() {
     }
   };
 
-  const handleComment = async () => {
-    // Implement comment modal/drawer logic
-    console.log('Show comment section');
-  };
-
   return (
     <div className="fixed inset-0 bg-black w-screen h-screen">
       <div className="relative w-full h-full flex items-center justify-center">
@@ -143,10 +164,11 @@ export default function ReelsViewer() {
             </button>
             
             <button 
-              onClick={handleComment}
+              onClick={() => document.getElementById('comments_modal')?.showModal()}
               className="p-2 text-white hover:scale-110 transition-transform"
             >
               <MessageCircle className="w-8 h-8" />
+              <p>{commentsData?.comments.length || 0}</p>
             </button>
             
             <button className="p-2 text-white hover:scale-110 transition-transform">
@@ -179,6 +201,55 @@ export default function ReelsViewer() {
           </div>
         </div>
       </div>
+
+      {/* Comments Modal */}
+      <dialog id="comments_modal" className="modal">
+        <div className="modal-box bg-zinc-900 text-white max-w-md w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-lg">Comments</h3>
+            <form method="dialog">
+              <button className="btn btn-ghost btn-sm">✕</button>
+            </form>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto mb-4">
+            {commentsData?.comments.map((comment) => (
+              <div key={comment._id} className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-zinc-700" />
+                <div>
+                  <p className="font-semibold text-sm">{comment.user.username}</p>
+                  <p className="text-sm text-zinc-300">{comment.text}</p>
+                  <p className="text-xs text-zinc-500">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Comment Input */}
+          <form onSubmit={handleSubmitComment} className="flex gap-2">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Add a comment..."
+              className="input input-bordered flex-1 bg-zinc-800"
+            />
+            <button 
+              type="submit"
+              className="btn btn-primary"
+              disabled={!commentText.trim()}
+            >
+              Post
+            </button>
+          </form>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }

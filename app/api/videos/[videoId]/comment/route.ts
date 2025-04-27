@@ -13,21 +13,22 @@ export async function POST(
     {params}:{params:{videoId:string}},
 ){
     try{
+      const {videoId }= await  params;
         const session = await getServerSession(authOptions);
         if(!session?.user){
-            NextResponse.json({errror:"Please Login to Comment"},{status:401})
+            return NextResponse.json({errror:"Please Login to Comment"},{status:401})
         };
 
         await connectToDatabase();
 
-        if(!mongoose.Types.ObjectId.isValid(params.videoId)){
-            NextResponse.json({error:"Video Id is not valid"},{status:401})
+        if(!mongoose.Types.ObjectId.isValid(videoId)){
+            return NextResponse.json({error:"Video Id is not valid"},{status:401})
         }
         const body:CommentRequest = await request.json();
         if(!body.text?.trim()){
             return NextResponse.json({error:"Comment text is Required"},{status:400})
         }
-     const updatedVideo = await Video.findByIdAndUpdate(params.videoId,{
+     const updatedVideo = await Video.findByIdAndUpdate(videoId,{
         $push:{
             comments:{
                 text:body.text,
@@ -36,7 +37,8 @@ export async function POST(
             }
         }
      },
-    {new:true}).populate("comment.user","username");
+    {new:true}).populate("comments.user","username");
+    console.log(updatedVideo)
 if(!updatedVideo){
     return NextResponse.json({error:"Video Not found"},{status:404})
 }
@@ -52,6 +54,7 @@ export async function GET(
     { params }: { params: { videoId: string } }
   ) {
     try {
+  
       await connectToDatabase();
   
       // Get pagination parameters from URL
@@ -59,14 +62,14 @@ export async function GET(
       const page = parseInt(searchParams.get("page") || "1");
       const limit = parseInt(searchParams.get("limit") || "10");
       const skip = (page - 1) * limit;
-  
+      const {videoId} = await params;
       // Validate videoId
-      if (!mongoose.Types.ObjectId.isValid(params.videoId)) {
+      if (!mongoose.Types.ObjectId.isValid(videoId)) {
         return NextResponse.json({ error: "Invalid video ID" }, { status: 400 });
       }
   
       // Find video and get paginated comments
-      const video = await Video.findById(params.videoId)
+      const video = await Video.findById(videoId)
         .select("comments")
         .populate("comments.user", "username")
         .slice("comments", [skip, limit]);
@@ -95,6 +98,7 @@ export async function GET(
     { params }: { params: { videoId: string } }
   ) {
     try {
+      const {videoId} = await params;
       const session = await getServerSession(authOptions);
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -109,7 +113,7 @@ export async function GET(
         return NextResponse.json({ error: "Invalid comment ID" }, { status: 400 });
       }
   
-      const video = await Video.findById(params.videoId);
+      const video = await Video.findById(videoId);
       if (!video) {
         return NextResponse.json({ error: "Video not found" }, { status: 404 });
       }
@@ -117,7 +121,7 @@ export async function GET(
       // Remove comment if user is comment author
       const updatedVideo = await Video.findOneAndUpdate(
         {
-          _id: params.videoId,
+          _id: videoId,
           "comments._id": commentId,
           "comments.user": session.user.id
         },
